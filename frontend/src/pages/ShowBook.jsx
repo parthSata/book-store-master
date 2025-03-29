@@ -1,23 +1,22 @@
-import React, { useEffect, useState } from 'react'
-import axios from 'axios'
-import { useParams } from 'react-router-dom'
-import BackButton from '../components/BackButton'
-import Spinner from '../components/Spinner'
-
+// frontend/src/pages/ShowBook.jsx
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { useParams, useNavigate } from 'react-router-dom';
+import BackButton from '../components/BackButton';
+import Spinner from '../components/Spinner';
 
 const ShowBook = () => {
   const [book, setBook] = useState({});
   const [loading, setLoading] = useState(false);
   const { id } = useParams();
-  console.log(id);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
         const response = await axios.get(`http://localhost:3000/books/${id}`);
-        const data = await response.data;
-        setBook(data.data);
+        setBook(response.data.data);
         setLoading(false);
       } catch (error) {
         console.log(error);
@@ -27,42 +26,79 @@ const ShowBook = () => {
     fetchData();
   }, [id]);
 
+  const handleOrder = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Please login to place an order');
+      navigate('/login');
+      return;
+    }
+    try {
+      await axios.post(
+        'http://localhost:3000/orders',
+        { bookId: id, paymentMethod: 'COD' },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert('Order placed successfully!');
+    } catch (error) {
+      alert('Error placing order');
+      console.log(error);
+    }
+  };
+
   return (
-    <div className='p-4'>
+    <div className="p-6 min-h-screen bg-gradient-to-r from-blue-100 to-purple-100">
       <BackButton />
-      <h1 className='text-3xl my-4'>Show Book</h1>
+      <h1 className="text-4xl font-bold text-center text-gray-800 my-6 animate__animated animate__fadeInDown">
+        Show Book
+      </h1>
       {loading ? (
         <Spinner />
       ) : (
-        <div className='flex flex-col border-2 border-sky-400 rounded-x1 w-fit p-4'>
-          <div className='my-4'>
-            <span className='text-xl mr-4 text-gray-500'>Id</span>
-            <span>{book._id}</span>
+        <div className="flex flex-col border-2 border-sky-500 rounded-xl w-full max-w-lg p-6 mx-auto bg-white shadow-lg transform hover:scale-105 transition-transform duration-300">
+          {book.image && (
+            <div className="my-4">
+              <img
+                src={`http://localhost:3000${book.image}`}
+                alt={book.title}
+                className="w-full h-64 object-cover rounded-lg shadow-md"
+              />
+            </div>
+          )}
+          <div className="my-4">
+            <span className="text-xl text-gray-600">Id</span>
+            <span className="ml-4">{book._id}</span>
           </div>
-          <div className='my-4'>
-            <span className='text-xl mr-4 text-gray-500'>Title</span>
-            <span>{book.title}</span>
+          <div className="my-4">
+            <span className="text-xl text-gray-600">Title</span>
+            <span className="ml-4">{book.title}</span>
           </div>
-          <div className='my-4'>
-            <span className='text-xl mr-4 text-gray-500'>Author</span>
-            <span>{book.author}</span>
+          <div className="my-4">
+            <span className="text-xl text-gray-600">Author</span>
+            <span className="ml-4">{book.author}</span>
+            </div>
+          <div className="my-4">
+            <span className="text-xl text-gray-600">Publish Year</span>
+            <span className="ml-4">{book.publishYear}</span>
           </div>
-          <div className='my-4'>
-            <span className='text-xl mr-4 text-gray-500'>Publish Year</span>
-            <span>{book.publishYear}</span>
+          <div className="my-4">
+            <span className="text-xl text-gray-600">Create Time</span>
+            <span className="ml-4">{new Date(book.createdAt).toString()}</span>
           </div>
-          <div className='my-4'>
-            <span className='text-xl mr-4 text-gray-500'>Create Time</span>
-            <span>{new Date(book.createdAt).toString()}</span>
+          <div className="my-4">
+            <span className="text-xl text-gray-600">Last Update Time</span>
+            <span className="ml-4">{new Date(book.updatedAt).toString()}</span>
           </div>
-          <div className='my-4'>
-            <span className='text-xl mr-4 text-gray-500'>Last Update Time</span>
-            <span>{new Date(book.updatedAt).toString()}</span>
-          </div>
+          <button
+            className="p-3 bg-green-500 text-white rounded-lg mt-4 hover:bg-green-600 transform hover:scale-110 transition-all duration-300"
+            onClick={handleOrder}
+          >
+            Order (Cash on Delivery)
+          </button>
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
 export default ShowBook;

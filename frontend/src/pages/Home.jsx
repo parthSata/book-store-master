@@ -1,52 +1,130 @@
+// frontend/src/pages/Home.jsx
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import Spinner from '../components/Spinner';
 import { Link } from 'react-router-dom';
-import { AiOutlineEdit } from 'react-icons/ai';
-import { BsInfoCircle } from 'react-icons/bs';
-import { MdOutlineAddBox, MdOutlineDelete } from 'react-icons/md';
-import BooksCard from '../components/home/BooksCard';
-import BooksTable from '../components/home/BooksTable';
+import Spinner from '../components/Spinner';
 
 const Home = () => {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [showType, setShowType] = useState('table');
 
   useEffect(() => {
-    const fetchBooks = async () => {
-      setLoading(true);
-      try {
-        const response = await axios.get('http://localhost:3000/books');
-        const data = await response.data;
-        setBooks(data.data);
+    setLoading(true);
+    axios
+      .get('http://localhost:3000/books')
+      .then((response) => {
+        setBooks(response.data.data);
         setLoading(false);
-      } catch (error) {
+      })
+      .catch((error) => {
         console.log(error);
         setLoading(false);
-      }
-    };
-
-    fetchBooks();
+      });
   }, []);
 
+  const handleAddToCart = async (bookId) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Please login to add to cart');
+      window.location.href = '/login';
+      return;
+    }
+    try {
+      await axios.post(
+        'http://localhost:3000/cart',
+        { bookId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert('Book added to cart!');
+    } catch (error) {
+      alert('Error adding to cart');
+      console.log(error);
+    }
+  };
+
   return (
-    <div className='p-4'>
-      <div className='flex justify-center items-center gap-x-4'>
-        <button className='bg-sky-300 hover:bg-sky-600 px-4 py-1 rounded-lg' onClick={() => setShowType('table')}>
-          Table
-        </button>
-        <button className='bg-sky-300 hover:bg-sky-600 px-4 py-1 rounded-lg' onClick={() => setShowType('card')}>
-          Card
-        </button>
+    <div className="p-6 min-h-screen bg-gradient-to-r from-blue-100 to-purple-100">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-4xl font-bold text-gray-800 animate__animated animate__fadeInDown">
+          Books List
+        </h1>
+        <div>
+          <Link
+            to="/cart"
+            className="p-3 bg-yellow-500 text-white rounded-lg mr-4 hover:bg-yellow-600 transform hover:scale-110 transition-all duration-300"
+          >
+            View Cart
+          </Link>
+          {localStorage.getItem('token') ? (
+            <button
+              onClick={() => {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
+              }}
+              className="p-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transform hover:scale-110 transition-all duration-300"
+            >
+              Logout
+            </button>
+          ) : (
+            <Link
+              to="/login"
+              className="p-3 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transform hover:scale-110 transition-all duration-300"
+            >
+              Login
+            </Link>
+          )}
+        </div>
       </div>
-      <div className='flex justify-between items-centre'>
-        <h1 className='text-3xl my-8'>Books List</h1>
-        <Link to='/books/create'>
-          <MdOutlineAddBox className='text-sky-800 text-4xl' />
-        </Link>
-      </div>
-      {loading ? <Spinner /> : showType === 'table' ? <BooksTable books={books} /> : <BooksCard books={books} />}
+      {loading ? (
+        <Spinner />
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {books.map((book) => (
+            <div
+              key={book._id}
+              className="border-2 border-sky-500 rounded-xl p-4 bg-white shadow-lg transform hover:scale-105 transition-transform duration-300"
+            >
+              {book.image && (
+                <img
+                  src={`http://localhost:3000${book.image}`}
+                  alt={book.title}
+                  className="w-full h-48 object-cover rounded-lg mb-4"
+                />
+              )}
+              <h2 className="text-xl font-semibold text-gray-800">{book.title}</h2>
+              <p className="text-gray-600">Author: {book.author}</p>
+              <p className="text-gray-600">Publish Year: {book.publishYear}</p>
+              <div className="flex justify-between mt-4">
+                <Link
+                  to={`/books/details/${book._id}`}
+                  className="p-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transform hover:scale-110 transition-all duration-300"
+                >
+                  View
+                </Link>
+                <Link
+                  to={`/books/edit/${book._id}`}
+                  className="p-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transform hover:scale-110 transition-all duration-300"
+                >
+                  Edit
+                </Link>
+                <Link
+                  to={`/books/delete/${book._id}`}
+                  className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transform hover:scale-110 transition-all duration-300"
+                >
+                  Delete
+                </Link>
+              </div>
+              <button
+                onClick={() => handleAddToCart(book._id)}
+                className="p-2 bg-green-500 text-white rounded-lg mt-4 w-full hover:bg-green-600 transform hover:scale-110 transition-all duration-300"
+              >
+                Add to Cart
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

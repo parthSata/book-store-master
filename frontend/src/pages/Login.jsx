@@ -1,29 +1,29 @@
 // frontend/src/pages/Login.jsx
-import React, { useState } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
   const handleLogin = async () => {
     try {
-      const response = await axios.post('http://localhost:3000/users/login', {
+      const response = await axios.post("http://localhost:3000/users/login", {
         username,
         password,
       });
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-      if (response.data.user.role === 'admin') {
-        navigate('/admin');
+      localStorage.setItem("token", response.data.token);
+      localStorage.setItem("user", JSON.stringify(response.data.user));
+      if (response.data.user.role === "admin") {
+        navigate("/admin");
       } else {
-        navigate('/');
+        navigate("/");
       }
     } catch (error) {
-      alert('Invalid credentials');
-      console.log(error);
+      alert("Invalid credentials");
+      console.log(error.response ? error.response.data : error.message);
     }
   };
 
@@ -58,7 +58,7 @@ const Login = () => {
           Login
         </button>
         <p className="text-center mt-4">
-          Don't have an account?{' '}
+          Don't have an account?{" "}
           <a href="/signup" className="text-sky-500 hover:underline">
             Sign Up
           </a>

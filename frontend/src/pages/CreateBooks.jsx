@@ -1,8 +1,8 @@
 // frontend/src/pages/CreateBooks.jsx
 import axios from "axios";
 import { useSnackbar } from "notistack";
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import BackButton from "../components/BackButton";
 import Spinner from "../components/Spinner";
 
@@ -12,34 +12,54 @@ const CreateBooks = () => {
   const [publishYear, setPublishYear] = useState("");
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [books, setBooks] = useState([]);
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
+
+  useEffect(() => {
+    fetchBooks();
+  }, []);
+
+  const fetchBooks = async () => {
+    setLoading(true);
+    const token = localStorage.getItem("token");
+    try {
+      const response = await axios.get("http://localhost:3000/books", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setBooks(response.data.data);
+      setLoading(false);
+    } catch (error) {
+      console.log(error);
+      setLoading(false);
+    }
+  };
 
   const handleSaveBook = async () => {
     const formData = new FormData();
     formData.append("title", title);
     formData.append("author", author);
     formData.append("publishYear", publishYear);
-
     if (image) {
       formData.append("image", image);
     }
-    console.log("Form data:", formData);
-    console.log("Title:", title);
-    console.log("Author:", author);
-    console.log("Publish Year:", publishYear);
-    console.log("Image:", image);
-    console.log("Image file:", image ? image.name : "No image selected");
-    console.log("formData", formData);
 
     setLoading(true);
+    const token = localStorage.getItem("token");
     try {
       await axios.post("http://localhost:3000/books", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
       });
       setLoading(false);
       enqueueSnackbar("Book Created successfully", { variant: "success" });
-      navigate("/");
+      setTitle("");
+      setAuthor("");
+      setPublishYear("");
+      setImage(null);
+      fetchBooks(); // Refresh book list
     } catch (error) {
       setLoading(false);
       enqueueSnackbar("Error", { variant: "error" });
@@ -54,7 +74,7 @@ const CreateBooks = () => {
         Create Book
       </h1>
       {loading && <Spinner />}
-      <div className="flex flex-col border-2 border-sky-400Vite-500 rounded-xl w-full max-w-lg p-6 mx-auto bg-white shadow-lg transform hover:scale-105 transition-transform duration-300">
+      <div className="flex flex-col border-2 border-sky-400 rounded-xl w-full max-w-lg p-6 mx-auto bg-white shadow-lg transform hover:scale-105 transition-transform duration-300">
         <div className="my-4">
           <label className="text-xl text-gray-600">Title</label>
           <input
@@ -97,6 +117,47 @@ const CreateBooks = () => {
         >
           Save
         </button>
+      </div>
+
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">Created Books</h2>
+        {loading ? (
+          <Spinner />
+        ) : (
+          <table className="w-full bg-white shadow-lg rounded-lg">
+            <thead>
+              <tr className="bg-gray-200">
+                <th className="p-3 text-left">Title</th>
+                <th className="p-3 text-left">Author</th>
+                <th className="p-3 text-left">Year</th>
+                <th className="p-3 text-left">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {books.map((book) => (
+                <tr key={book._id} className="border-b">
+                  <td className="p-3">{book.title}</td>
+                  <td className="p-3">{book.author}</td>
+                  <td className="p-3">{book.publishYear}</td>
+                  <td className="p-3">
+                    <Link
+                      to={`/books/edit/${book._id}`}
+                      className="mr-2 text-yellow-500 hover:underline"
+                    >
+                      Edit
+                    </Link>
+                    <Link
+                      to={`/books/delete/${book._id}`}
+                      className="text-red-500 hover:underline"
+                    >
+                      Delete
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

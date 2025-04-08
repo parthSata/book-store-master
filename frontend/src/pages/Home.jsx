@@ -1,8 +1,8 @@
 // frontend/src/pages/Home.jsx
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { Link } from 'react-router-dom';
-import Spinner from '../components/Spinner';
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { Link } from "react-router-dom";
+import Spinner from "../components/Spinner";
 
 const Home = () => {
   const [books, setBooks] = useState([]);
@@ -10,8 +10,11 @@ const Home = () => {
 
   useEffect(() => {
     setLoading(true);
+    const token = localStorage.getItem("token");
     axios
-      .get('http://localhost:3000/books')
+      .get("http://localhost:3000/books", {
+        headers: { Authorization: `Bearer ${token}` }, // Add token for consistency
+      })
       .then((response) => {
         setBooks(response.data.data);
         setLoading(false);
@@ -23,22 +26,22 @@ const Home = () => {
   }, []);
 
   const handleAddToCart = async (bookId) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (!token) {
-      alert('Please login to add to cart');
-      window.location.href = '/login';
+      alert("Please login to add to cart");
+      window.location.href = "/login";
       return;
     }
     try {
       await axios.post(
-        'http://localhost:3000/cart',
+        "http://localhost:3000/cart",
         { bookId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      alert('Book added to cart!');
+      alert("Book added to cart!");
     } catch (error) {
-      alert('Error adding to cart');
-      console.log(error);
+      alert("Error adding to cart");
+      console.log(error.response ? error.response.data : error.message);
     }
   };
 
@@ -55,25 +58,16 @@ const Home = () => {
           >
             View Cart
           </Link>
-          {localStorage.getItem('token') ? (
-            <button
-              onClick={() => {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                window.location.href = '/login';
-              }}
-              className="p-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transform hover:scale-110 transition-all duration-300"
-            >
-              Logout
-            </button>
-          ) : (
-            <Link
-              to="/login"
-              className="p-3 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transform hover:scale-110 transition-all duration-300"
-            >
-              Login
-            </Link>
-          )}
+          <button
+            onClick={() => {
+              localStorage.removeItem("token");
+              localStorage.removeItem("user");
+              window.location.href = "/login";
+            }}
+            className="p-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transform hover:scale-110 transition-all duration-300"
+          >
+            Logout
+          </button>
         </div>
       </div>
       {loading ? (
@@ -90,9 +84,12 @@ const Home = () => {
                   src={`http://localhost:3000${book.image}`}
                   alt={book.title}
                   className="w-full h-48 object-cover rounded-lg mb-4"
+                  onError={(e) => console.log("Image load error:", e)} // Debug image issues
                 />
               )}
-              <h2 className="text-xl font-semibold text-gray-800">{book.title}</h2>
+              <h2 className="text-xl font-semibold text-gray-800">
+                {book.title}
+              </h2>
               <p className="text-gray-600">Author: {book.author}</p>
               <p className="text-gray-600">Publish Year: {book.publishYear}</p>
               <div className="flex justify-between mt-4">
@@ -102,25 +99,13 @@ const Home = () => {
                 >
                   View
                 </Link>
-                <Link
-                  to={`/books/edit/${book._id}`}
-                  className="p-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transform hover:scale-110 transition-all duration-300"
+                <button
+                  onClick={() => handleAddToCart(book._id)}
+                  className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transform hover:scale-110 transition-all duration-300"
                 >
-                  Edit
-                </Link>
-                <Link
-                  to={`/books/delete/${book._id}`}
-                  className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transform hover:scale-110 transition-all duration-300"
-                >
-                  Delete
-                </Link>
+                  Add to Cart
+                </button>
               </div>
-              <button
-                onClick={() => handleAddToCart(book._id)}
-                className="p-2 bg-green-500 text-white rounded-lg mt-4 w-full hover:bg-green-600 transform hover:scale-110 transition-all duration-300"
-              >
-                Add to Cart
-              </button>
             </div>
           ))}
         </div>

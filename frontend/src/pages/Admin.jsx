@@ -1,62 +1,53 @@
 // frontend/src/pages/Admin.jsx
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import React from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 const Admin = () => {
-  const [orders, setOrders] = useState([]);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      navigate('/login');
-      return;
-    }
-    const fetchOrders = async () => {
-      try {
-        const response = await axios.get('http://localhost:3000/orders', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setOrders(response.data.data);
-      } catch (error) {
-        alert('Error fetching orders');
-        console.log(error);
-      }
-    };
-    fetchOrders();
-  }, [navigate]);
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
 
   return (
     <div className="p-6 min-h-screen bg-gradient-to-r from-blue-100 to-purple-100">
-      <h1 className="text-4xl font-bold text-center text-gray-800 my-6 animate__animated animate__fadeInDown">
-        Admin - Orders
-      </h1>
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white shadow-lg rounded-lg">
-          <thead>
-            <tr className="bg-sky-500 text-white">
-              <th className="py-3 px-4 text-left">Order ID</th>
-              <th className="py-3 px-4 text-left">User</th>
-              <th className="py-3 px-4 text-left">Book</th>
-              <th className="py-3 px-4 text-left">Status</th>
-              <th className="py-3 px-4 text-left">Payment Method</th>
-              <th className="py-3 px-4 text-left">Created At</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.map((order) => (
-              <tr key={order._id} className="border-b hover:bg-gray-100 transition-colors duration-300">
-                <td className="py-3 px-4">{order._id}</td>
-                <td className="py-3 px-4">{order.userId.username}</td>
-                <td className="py-3 px-4">{order.bookId.title}</td>
-                <td className="py-3 px-4">{order.status}</td>
-                <td className="py-3 px-4">{order.paymentMethod}</td>
-                <td className="py-3 px-4">{new Date(order.createdAt).toLocaleString()}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-4xl font-bold text-gray-800 animate__animated animate__fadeInDown">
+          Admin Dashboard
+        </h1>
+        <button
+          onClick={handleLogout}
+          className="p-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transform hover:scale-110 transition-all duration-300"
+        >
+          Logout
+        </button>
+      </div>
+      <nav className="mb-6">
+        <Link
+          to="/orders"
+          className="mr-4 p-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transform hover:scale-110 transition-all duration-300"
+        >
+          Orders
+        </Link>
+        <Link
+          to="/books/create"
+          className="mr-4 p-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transform hover:scale-110 transition-all duration-300"
+        >
+          Create Book
+        </Link>
+        <Link
+          to="/confirm-orders"
+          className="p-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transform hover:scale-110 transition-all duration-300"
+        >
+          Confirm Orders
+        </Link>
+      </nav>
+      <div className="text-center">
+        <p className="text-xl text-gray-600">
+          Welcome to the Admin Dashboard. Select an option above.
+        </p>
       </div>
     </div>
   );

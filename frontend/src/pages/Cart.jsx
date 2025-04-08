@@ -2,37 +2,36 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import Spinner from "../components/Spinner";
 
 const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
+    setLoading(true);
     const token = localStorage.getItem("token");
-    if (!token) {
-      navigate("/login");
-      return;
-    }
-    const fetchCart = async () => {
-      try {
-        const response = await axios.get("http://localhost:3000/cart", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+    axios
+      .get("http://localhost:3000/cart", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((response) => {
         setCartItems(response.data.data);
-      } catch (error) {
-        alert("Error fetching cart");
+        setLoading(false);
+      })
+      .catch((error) => {
         console.log(error);
-      }
-    };
-    fetchCart();
-  }, [navigate]);
+        setLoading(false);
+      });
+  }, []);
 
   const handlePlaceOrder = async (bookId) => {
     const token = localStorage.getItem("token");
     try {
       await axios.post(
         "http://localhost:3000/orders",
-        { bookId, paymentMethod: "COD" },
+        { bookId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       alert("Order placed successfully!");
@@ -45,39 +44,32 @@ const Cart = () => {
 
   return (
     <div className="p-6 min-h-screen bg-gradient-to-r from-blue-100 to-purple-100">
-      <h1 className="text-4xl font-bold text-center text-gray-800 my-6 animate__animated animate__fadeInDown">
+      <h1 className="text-4xl font-bold text-gray-800 mb-6 animate__animated animate__fadeInDown">
         Your Cart
       </h1>
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white shadow-lg rounded-lg">
-          <thead>
-            <tr className="bg-sky-500 text-white">
-              <th className="py-3 px-4 text-left">Book</th>
-              <th className="py-3 px-4 text-left">Quantity</th>
-              <th className="py-3 px-4 text-left">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {cartItems.map((item) => (
-              <tr
-                key={item._id}
-                className="border-b hover:bg-gray-100 transition-colors duration-300"
+      {loading ? (
+        <Spinner />
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {cartItems.map((item) => (
+            <div
+              key={item._id}
+              className="border-2 border-sky-500 rounded-xl p-4 bg-white shadow-lg transform hover:scale-105 transition-transform duration-300"
+            >
+              <h2 className="text-xl font-semibold text-gray-800">
+                {item.bookId.title}
+              </h2>
+              <p className="text-gray-600">Author: {item.bookId.author}</p>
+              <button
+                onClick={() => handlePlaceOrder(item.bookId._id)}
+                className="p-2 bg-green-500 text-white rounded-lg mt-4 w-full hover:bg-green-600 transform hover:scale-110 transition-all duration-300"
               >
-                <td className="py-3 px-4">{item.bookId.title}</td>
-                <td className="py-3 px-4">{item.quantity}</td>
-                <td className="py-3 px-4">
-                  <button
-                    className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transform hover:scale-110 transition-all duration-300"
-                    onClick={() => handlePlaceOrder(item.bookId._id)}
-                  >
-                    Place Order (COD)
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                Place Order
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

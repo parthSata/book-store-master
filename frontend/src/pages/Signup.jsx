@@ -13,13 +13,13 @@ const Signup = () => {
       await axios.post("http://localhost:3000/users/signup", {
         username,
         password,
-        role: "user",
+        role: "user", // Default role is 'user'
       });
       alert("Signup successful! Please login.");
       navigate("/login");
     } catch (error) {
-      alert("Error during signup");
-      console.log(error);
+      alert(error.response?.data.message || "Error during signup");
+      console.log(error.response ? error.response.data : error.message);
     }
   };
 

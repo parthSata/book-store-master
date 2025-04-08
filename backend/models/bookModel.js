@@ -15,7 +15,7 @@ const bookSchema = mongoose.Schema({
     required: true,
   },
   image: {
-    type: String, // Store the image URL or path
+    type: String,
     required: false,
   },
   createdAt: {

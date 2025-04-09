@@ -19,20 +19,36 @@ const EditBook = () => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setLoading(false);
+        enqueueSnackbar("Please log in to edit a book", { variant: "warning" });
+        navigate("/login");
+        return;
+      }
       try {
-        const response = await axios.get(`http://localhost:3000/books/${id}`);
+        const response = await axios.get(`http://localhost:3000/books/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         setAuthor(response.data.data.author);
         setPublishYear(response.data.data.publishYear);
         setTitle(response.data.data.title);
         setLoading(false);
       } catch (error) {
         setLoading(false);
-        enqueueSnackbar('Error', { variant: 'error' });
-        console.log(error);
+        if (error.response?.status === 401) {
+          enqueueSnackbar("Session expired. Please log in again.", { variant: "error" });
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          navigate("/login");
+        } else {
+          enqueueSnackbar("Error fetching book details", { variant: "error" });
+          console.log(error.response?.data || error.message);
+        }
       }
     };
     fetchData();
-  }, [id, enqueueSnackbar]);
+  }, [id, enqueueSnackbar, navigate]);
 
   const handleEditBook = async () => {
     const formData = new FormData();
@@ -44,17 +60,36 @@ const EditBook = () => {
     }
 
     setLoading(true);
+    const token = localStorage.getItem("token");
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    if (!token || user.role !== "admin") {
+      setLoading(false);
+      enqueueSnackbar("Admin access required. Please log in as admin.", { variant: "error" });
+      navigate("/login");
+      return;
+    }
+
     try {
       await axios.put(`http://localhost:3000/books/${id}`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}`,
+        },
       });
       setLoading(false);
       enqueueSnackbar('Book Edited Successfully', { variant: 'success' });
-      navigate('/');
+      navigate('/admin'); // Redirect to admin page after success
     } catch (error) {
       setLoading(false);
-      enqueueSnackbar('Error', { variant: 'error' });
-      console.log(error);
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        enqueueSnackbar("Unauthorized. Please log in as admin.", { variant: "error" });
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        navigate("/login");
+      } else {
+        enqueueSnackbar("Error editing book: " + (error.response?.data?.message || "Unknown error"), { variant: "error" });
+        console.log(error.response?.data || error.message);
+      }
     }
   };
 

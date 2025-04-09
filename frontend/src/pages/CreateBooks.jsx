@@ -23,6 +23,12 @@ const CreateBooks = () => {
   const fetchBooks = async () => {
     setLoading(true);
     const token = localStorage.getItem("token");
+    if (!token) {
+      setLoading(false);
+      enqueueSnackbar("Please log in to view books", { variant: "warning" });
+      navigate("/login");
+      return;
+    }
     try {
       const response = await axios.get("http://localhost:3000/books", {
         headers: { Authorization: `Bearer ${token}` },
@@ -30,8 +36,16 @@ const CreateBooks = () => {
       setBooks(response.data.data);
       setLoading(false);
     } catch (error) {
-      console.log(error);
       setLoading(false);
+      if (error.response?.status === 401) {
+        enqueueSnackbar("Session expired. Please log in again.", { variant: "error" });
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        navigate("/login");
+      } else {
+        enqueueSnackbar("Error fetching books", { variant: "error" });
+        console.log(error.response?.data || error.message);
+      }
     }
   };
 
@@ -46,6 +60,14 @@ const CreateBooks = () => {
 
     setLoading(true);
     const token = localStorage.getItem("token");
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    if (!token || user.role !== "admin") {
+      setLoading(false);
+      enqueueSnackbar("Admin access required. Please log in as admin.", { variant: "error" });
+      navigate("/login");
+      return;
+    }
+
     try {
       await axios.post("http://localhost:3000/books", formData, {
         headers: {
@@ -54,7 +76,7 @@ const CreateBooks = () => {
         },
       });
       setLoading(false);
-      enqueueSnackbar("Book Created successfully", { variant: "success" });
+      enqueueSnackbar("Book created successfully", { variant: "success" });
       setTitle("");
       setAuthor("");
       setPublishYear("");
@@ -62,8 +84,15 @@ const CreateBooks = () => {
       fetchBooks(); // Refresh book list
     } catch (error) {
       setLoading(false);
-      enqueueSnackbar("Error", { variant: "error" });
-      console.log(error);
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        enqueueSnackbar("Unauthorized. Please log in as admin.", { variant: "error" });
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        navigate("/login");
+      } else {
+        enqueueSnackbar("Error creating book: " + (error.response?.data?.message || "Unknown error"), { variant: "error" });
+        console.log(error.response?.data || error.message);
+      }
     }
   };
 

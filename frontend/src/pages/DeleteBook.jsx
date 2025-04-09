@@ -14,15 +14,33 @@ const DeleteBook = () => {
 
   const handleDeleteBook = async () => {
     setLoading(true);
+    const token = localStorage.getItem("token");
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    if (!token || user.role !== "admin") {
+      setLoading(false);
+      enqueueSnackbar("Admin access required. Please log in as admin.", { variant: "error" });
+      navigate("/login");
+      return;
+    }
+
     try {
-      await axios.delete(`http://localhost:3000/books/${id}`);
+      await axios.delete(`http://localhost:3000/books/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setLoading(false);
       enqueueSnackbar('Book Deleted Successfully', { variant: 'success' });
-      navigate('/');
+      navigate('/admin'); // Redirect to admin page after success
     } catch (error) {
       setLoading(false);
-      enqueueSnackbar('Error', { variant: 'error' });
-      console.log(error);
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        enqueueSnackbar("Unauthorized. Please log in as admin.", { variant: "error" });
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        navigate("/login");
+      } else {
+        enqueueSnackbar("Error deleting book: " + (error.response?.data?.message || "Unknown error"), { variant: "error" });
+        console.log(error.response?.data || error.message);
+      }
     }
   };
 

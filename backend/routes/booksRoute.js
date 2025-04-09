@@ -30,7 +30,7 @@ const upload = multer({
   },
 });
 
-// Middleware to verify token and role
+// Middleware to verify token and admin role
 const authenticateAdmin = (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
   if (!token) {
@@ -41,16 +41,14 @@ const authenticateAdmin = (req, res, next) => {
     if (decoded.role !== "admin") {
       return res.status(403).json({ message: "Admin access required" });
     }
-    req.user = decoded;
+    req.user = decoded; // Attach decoded user to request
     next();
   } catch (error) {
-    return res.status(401).json({ message: "Invalid token" });
+    return res.status(401).json({ message: "Invalid or expired token" });
   }
 };
 
 const router = express.Router();
-
-router.use("/uploads", express.static("uploads"));
 
 // Create a book (Admin only)
 router.post(
@@ -58,8 +56,6 @@ router.post(
   authenticateAdmin,
   upload.single("image"),
   async (req, res) => {
-    console.log("Request body:", req.body);
-    console.log("Request file:", req.file);
     try {
       const { title, author, publishYear } = req.body;
       if (!title || !author || !publishYear) {
@@ -72,7 +68,6 @@ router.post(
         image: req.file ? `/uploads/${req.file.filename}` : null,
       });
       const createdBook = await book.save();
-      console.log("Book created:", createdBook);
       res.status(201).json({ data: createdBook });
     } catch (error) {
       console.error("Error creating book:", error);
@@ -87,8 +82,6 @@ router.put(
   authenticateAdmin,
   upload.single("image"),
   async (req, res) => {
-    console.log("Request body:", req.body);
-    console.log("Request file:", req.file);
     try {
       const { title, author, publishYear } = req.body;
       const book = await Book.findById(req.params.id);
@@ -103,7 +96,6 @@ router.put(
       }
       book.updatedAt = Date.now();
       const updatedBook = await book.save();
-      console.log("Book updated:", updatedBook);
       res.status(200).json({ data: updatedBook });
     } catch (error) {
       console.error("Error updating book:", error);

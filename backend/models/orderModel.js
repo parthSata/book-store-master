@@ -1,4 +1,3 @@
-// backend/models/orderModel.js
 import mongoose from "mongoose";
 
 const orderSchema = mongoose.Schema({
@@ -12,6 +11,7 @@ const orderSchema = mongoose.Schema({
     ref: 'Book',
     required: true,
   },
+  quantity: { type: Number, default: 1, min: 1 }, // Added quantity field
   status: {
     type: String,
     enum: ['pending', 'confirmed', 'delivered', 'cancelled'],
@@ -29,4 +29,3 @@ const orderSchema = mongoose.Schema({
 });
 
 export const Order = mongoose.model('Order', orderSchema);
-

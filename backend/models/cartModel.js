@@ -1,9 +1,9 @@
-// backend/models/cartModel.js
 import mongoose from "mongoose";
 
 const cartSchema = mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   bookId: { type: mongoose.Schema.Types.ObjectId, ref: "Book", required: true },
+  quantity: { type: Number, default: 1, min: 1 }, // Added quantity field
   createdAt: { type: Date, default: Date.now },
 });
 

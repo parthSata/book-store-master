@@ -1,18 +1,17 @@
-// backend/routes/orderRoute.js
 import express from "express";
 import { Order } from "../models/orderModel.js";
+import { Cart } from "../models/cartModel.js"; // Import Cart model
 import jwt from "jsonwebtoken";
 
 const orderRouter = express.Router();
 
-// Middleware to verify JWT
 const authMiddleware = (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
   if (!token) {
     return res.status(401).json({ message: "No token provided" });
   }
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET); // Match secret with userRoute.js
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
     next();
   } catch (error) {
@@ -20,7 +19,6 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
-// Middleware to verify admin role
 const adminMiddleware = (req, res, next) => {
   if (req.user.role !== "admin") {
     return res.status(403).json({ message: "Admin access required" });
@@ -28,16 +26,20 @@ const adminMiddleware = (req, res, next) => {
   next();
 };
 
-// Place an order (User)
 orderRouter.post("/", authMiddleware, async (req, res) => {
   try {
-    const { bookId, paymentMethod } = req.body;
+    const { bookId, quantity = 1, paymentMethod } = req.body;
     const order = new Order({
       userId: req.user.id,
       bookId,
+      quantity,
       paymentMethod: paymentMethod || "COD",
     });
     const savedOrder = await order.save();
+
+    // Delete the cart item for this user and book
+    await Cart.deleteOne({ userId: req.user.id, bookId });
+
     res.status(201).json({ data: savedOrder });
   } catch (error) {
     console.error("Error placing order:", error);
@@ -45,7 +47,6 @@ orderRouter.post("/", authMiddleware, async (req, res) => {
   }
 });
 
-// Get all orders (Admin only)
 orderRouter.get("/", authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const orders = await Order.find({ status: "pending" })
@@ -58,7 +59,6 @@ orderRouter.get("/", authMiddleware, adminMiddleware, async (req, res) => {
   }
 });
 
-// Get confirmed orders (Admin only)
 orderRouter.get("/confirmed", authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const orders = await Order.find({ status: "confirmed" })
@@ -71,7 +71,6 @@ orderRouter.get("/confirmed", authMiddleware, adminMiddleware, async (req, res) 
   }
 });
 
-// Confirm an order (Admin only)
 orderRouter.put("/:id/confirm", authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
@@ -87,7 +86,6 @@ orderRouter.put("/:id/confirm", authMiddleware, adminMiddleware, async (req, res
   }
 });
 
-// Delete an order (Admin only)
 orderRouter.delete("/:id", authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const order = await Order.findByIdAndDelete(req.params.id);
